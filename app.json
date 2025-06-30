@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Jes segurança",
+    "icon": "./assets/imagens/jes.png",
+    "slug": "JES",
+    "version": "1.0.0",
+    "scheme": "jes-seguranca",
+    "splash": {
+      "image": "./assets/imagens/jes.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#03989e"
+    },
+    "android": {
+      "package": "com.jes.seguranca",
+      "versionCode": 1,
+      "permissions": []
+    },
+    "ios": {
+      "bundleIdentifier": "com.jes.seguranca",
+      "buildNumber": "1.0.0"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6f442fe7-1082-4418-9fd7-b98ee6a08c52"
+      }
+    }
+  }
+}
