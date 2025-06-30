@@ -24,7 +24,9 @@ export default function EquipamentosScreen() {
   const [quantidadesTemp, setQuantidadesTemp] = useState({});
 
   const API_URL = 'https://api-jesseguranca.onrender.com/equipamentos';
-
+  
+  // Função para carregar os equipamentos da API
+  // Utiliza o hook useEffect para chamar a função ao montar o componente
   const carregarEquipamentos = async () => {
     try {
       const response = await axios.get(API_URL);
@@ -36,6 +38,8 @@ export default function EquipamentosScreen() {
     }
   };
 
+  // Função para alterar a quantidade de um equipamento
+  // Recebe o id do equipamento e o tipo de alteração ('add' ou 'remove
   const alterarQuantidade = async (id, tipo) => {
     try {
       await axios.post(`${API_URL}/${id}/${tipo}`);
@@ -44,7 +48,9 @@ export default function EquipamentosScreen() {
       console.error(`Erro ao ${tipo} quantidade:`, error);
     }
   };
-
+  
+  // Função para salvar a quantidade editada
+  // Recebe o id do equipamento e atualiza a quantidade na API
   const salvarQuantidade = async (id) => {
     try {
       const novaQtd = parseInt(quantidadesTemp[id], 10);
@@ -57,11 +63,14 @@ export default function EquipamentosScreen() {
       console.error('Erro ao salvar quantidade:', error);
     }
   };
-
+  // Carrega os equipamentos ao montar o componente
+  // Utiliza o hook useEffect para chamar a função ao montar o componente
   useEffect(() => {
     carregarEquipamentos();
   }, []);
 
+  // Função para obter o ícone correspondente ao nome do equipamento
+  // Normaliza o nome para facilitar a comparação
   const getIcon = (nome) => {
     const key = (nome || '')
       .trim()
@@ -93,12 +102,15 @@ export default function EquipamentosScreen() {
     }
   };
 
+  // Renderiza cada item da lista de equipamentos
+  // Utiliza o FlatList para renderizar a lista de forma eficiente
   const renderItem = ({ item }) => {
     const icon = getIcon(item.nome);
     const IconComponent = icon.lib;
     const estaEditando = editandoId === item.id;
 
     return (
+      
       <View style={styles.card}>
         <IconComponent name={icon.name} size={30} color="#444" />
         <Text style={styles.nome}>{item.nome}</Text>
@@ -141,7 +153,7 @@ export default function EquipamentosScreen() {
             </>
           )}
         </View>
-
+        
         <TouchableOpacity
           onPress={() => {
             if (estaEditando) {

@@ -15,12 +15,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import axios from 'axios';
-import formatarCpf from '../../utils/formataCPF';
 import { router } from 'expo-router';
+
+// Importando funções utilitárias
+import formatarCpf from '../../utils/formataCPF';
 import Carregando from '../../utils/carregando';
 import formatarNome from '../../utils/formataNome';
 
 export default function FuncionariosScreen() {
+
+// Estados para gerenciar os dados dos funcionários, seleção, carregamento e visibilidade do menu
   const [funcionarios, setFuncionarios] = useState([]);
   const [selecionados, setSelecionados] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -29,10 +33,20 @@ export default function FuncionariosScreen() {
   const [cpfsDuplicados, setCpfsDuplicados] = useState([]);
   const [erroCPF, setErroCPF] = useState(false);
 
+// Função para buscar a lista de funcionários da API
   const buscarFuncionarios = async () => {
+  // Reseta os estados antes de buscar os dados
+    setFuncionarios([]);
+    setSelecionados([]);
+    setCpfsDuplicados([]);
+    setErroCPF(false);
+
   try {
+
     setCarregando(true);
     const response = await axios.get('https://api-jesseguranca.onrender.com/funcionarios');
+   // Ordena a lista de funcionários pelo nome
+    // Usando localeCompare para garantir a ordenação correta em português
     const listaOrdenada = response.data.sort((a, b) =>
       a.nome.localeCompare(b.nome, 'pt', { sensitivity: 'base' })
     );
@@ -42,9 +56,12 @@ export default function FuncionariosScreen() {
     const cpfs = listaOrdenada.map(f => f.cpf);
     const duplicados = cpfs.filter((cpf, index, array) => array.indexOf(cpf) !== index && array.lastIndexOf(cpf) === index);
     if (duplicados.length > 0) {
+
       setErroCPF(true);
       setCpfsDuplicados(duplicados);
       Alert.alert('Atenção', 'Há funcionários com CPFs duplicados!');
+      // Exibe os CPFs duplicados no console
+      console.log('CPFs duplicados:', duplicados);
     } else {
       setErroCPF(false);
       setCpfsDuplicados([]);
@@ -56,7 +73,7 @@ export default function FuncionariosScreen() {
     setCarregando(false);
   }
 };
-
+  // Efeito para buscar os funcionários ao montar o componente
   useEffect(() => {
     buscarFuncionarios();
   }, []);
@@ -66,23 +83,27 @@ export default function FuncionariosScreen() {
       prev.includes(cpf) ? prev.filter((item) => item !== cpf) : [...prev, cpf]
     );
   };
-
+  // Função para copiar os funcionários selecionados com CPF formatado
+  // e exibir um alerta de confirmação
   const copiarSelecionados = async () => {
+    // Verifica se há funcionários selecionados
     const dados = funcionarios
       .filter((f) => selecionados.includes(f.cpf))
       .map((f) => `NOME: ${f.nome}\nCPF: ${formatarCpf(f.cpf)}\n`)
       .join('\n');
 
+    // Verifica se há funcionários selecionados
     if (dados.trim().length === 0) {
       Alert.alert('Nenhum funcionário selecionado.');
       return;
     }
-
+    // Copia os dados formatados para a área de transferência
     await Clipboard.setStringAsync(dados);
     Alert.alert('Copiado!', 'Funcionários copiados com CPF formatado.');
     setMenuVisivel(false);
   };
-
+  // Função para selecionar todos os funcionários ou desmarcar todos
+  // Se todos os funcionários já estiverem selecionados, desmarca todos
   const selecionarTodos = () => {
     if (selecionados.length === funcionarios.length) {
       setSelecionados([]);
@@ -93,10 +114,14 @@ export default function FuncionariosScreen() {
     setMenuVisivel(false);
   };
 
+  // Filtra os funcionários com base na busca por nome ou CPF
+  // A busca é feita ignorando maiúsculas e minúsculas
+  // e verificando se o nome contém a string de busca ou se o CPF é igual
   const funcionariosFiltrados = funcionarios.filter((f) =>
     f.nome.toLowerCase().includes(busca.toLowerCase()) || f.cpf.includes(busca)
   );
-
+  // Se estiver carregando, exibe o componente de carregamento
+  // Caso contrário, renderiza a lista de funcionários
   if (carregando) {
     return <Carregando />;
   }
