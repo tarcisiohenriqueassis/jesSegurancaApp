@@ -25,7 +25,7 @@ import { useNavigation } from '@react-navigation/native'; // Importa hook naviga
 
 // Obtém a largura da tela do dispositivo
 // para definir o tamanho do carrossel
- const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const imagem1 = require('../assets/imagens/jes.png');
 const imagem2 = require('../assets/imagens/jescopy.png');

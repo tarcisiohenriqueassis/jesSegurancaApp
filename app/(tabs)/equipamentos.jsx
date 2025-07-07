@@ -7,7 +7,8 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
-  Platform,
+  useColorScheme,
+  useWindowDimensions,
 } from 'react-native';
 import {
   Ionicons,
@@ -22,11 +23,15 @@ export default function EquipamentosScreen() {
   const [loading, setLoading] = useState(true);
   const [editandoId, setEditandoId] = useState(null);
   const [quantidadesTemp, setQuantidadesTemp] = useState({});
+  const [filtro, setFiltro] = useState('todos');
+
+  const theme = useColorScheme(); // dark | light
+  const isDarkMode = theme === 'dark';
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
 
   const API_URL = 'https://api-jesseguranca.onrender.com/equipamentos';
-  
-  // Função para carregar os equipamentos da API
-  // Utiliza o hook useEffect para chamar a função ao montar o componente
+
   const carregarEquipamentos = async () => {
     try {
       const response = await axios.get(API_URL);
@@ -38,19 +43,6 @@ export default function EquipamentosScreen() {
     }
   };
 
-  // Função para alterar a quantidade de um equipamento
-  // Recebe o id do equipamento e o tipo de alteração ('add' ou 'remove
-  const alterarQuantidade = async (id, tipo) => {
-    try {
-      await axios.post(`${API_URL}/${id}/${tipo}`);
-      carregarEquipamentos();
-    } catch (error) {
-      console.error(`Erro ao ${tipo} quantidade:`, error);
-    }
-  };
-  
-  // Função para salvar a quantidade editada
-  // Recebe o id do equipamento e atualiza a quantidade na API
   const salvarQuantidade = async (id) => {
     try {
       const novaQtd = parseInt(quantidadesTemp[id], 10);
@@ -63,14 +55,11 @@ export default function EquipamentosScreen() {
       console.error('Erro ao salvar quantidade:', error);
     }
   };
-  // Carrega os equipamentos ao montar o componente
-  // Utiliza o hook useEffect para chamar a função ao montar o componente
+
   useEffect(() => {
     carregarEquipamentos();
   }, []);
 
-  // Função para obter o ícone correspondente ao nome do equipamento
-  // Normaliza o nome para facilitar a comparação
   const getIcon = (nome) => {
     const key = (nome || '')
       .trim()
@@ -102,24 +91,39 @@ export default function EquipamentosScreen() {
     }
   };
 
-  // Renderiza cada item da lista de equipamentos
-  // Utiliza o FlatList para renderizar a lista de forma eficiente
+  const equipamentosFiltrados =
+    filtro === 'todos'
+      ? equipamentos
+      : equipamentos.filter((e) => e.nome.toLowerCase().includes(filtro));
+
   const renderItem = ({ item }) => {
     const icon = getIcon(item.nome);
     const IconComponent = icon.lib;
     const estaEditando = editandoId === item.id;
 
     return (
-      
-      <View style={styles.card}>
-        <IconComponent name={icon.name} size={30} color="#444" />
-        <Text style={styles.nome}>{item.nome}</Text>
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: isDarkMode ? '#1c1c1e' : '#fff' },
+        ]}
+      >
+        <IconComponent name={icon.name} size={30} color={isDarkMode ? '#fff' : '#444'} />
+        <Text style={[styles.nome, { color: isDarkMode ? '#fff' : '#000', fontSize: isTablet ? 20 : 17 }]}>
+          {item.nome}
+        </Text>
 
         <View style={styles.controles}>
           {estaEditando ? (
             <>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    color: isDarkMode ? '#fff' : '#000',
+                    borderColor: isDarkMode ? '#555' : '#ccc',
+                  },
+                ]}
                 keyboardType="numeric"
                 value={String(quantidadesTemp[item.id] ?? item.quantidade)}
                 onChangeText={(text) =>
@@ -134,26 +138,17 @@ export default function EquipamentosScreen() {
               </TouchableOpacity>
             </>
           ) : (
-            <>
-              <TouchableOpacity
-                disabled={estaEditando}
-                onPress={() => alterarQuantidade(item.id, 'remove')}
-              >
-                <Ionicons name="remove-circle" size={30} color="#e74c3c" />
-              </TouchableOpacity>
-
-              <Text style={styles.quantidade}>{item.quantidade}</Text>
-
-              <TouchableOpacity
-                disabled={estaEditando}
-                onPress={() => alterarQuantidade(item.id, 'add')}
-              >
-                <Ionicons name="add-circle" size={30} color="#2ecc71" />
-              </TouchableOpacity>
-            </>
+            <Text
+              style={[
+                styles.quantidade,
+                { color: isDarkMode ? '#fff' : '#000', fontSize: isTablet ? 28 : 25 },
+              ]}
+            >
+              {item.quantidade}
+            </Text>
           )}
         </View>
-        
+
         <TouchableOpacity
           onPress={() => {
             if (estaEditando) {
@@ -167,7 +162,7 @@ export default function EquipamentosScreen() {
             }
           }}
         >
-          <Text style={styles.editarTexto}>
+          <Text style={[styles.editarTexto, { color: '#007AFF' }]}>
             {estaEditando ? 'Cancelar' : 'Editar'}
           </Text>
         </TouchableOpacity>
@@ -182,19 +177,53 @@ export default function EquipamentosScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Controle de Uniformes</Text>
- 
-      {equipamentos.length === 0 ? (
-        <Text style={styles.vazio}>Nenhum equipamento encontrado.</Text>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDarkMode ? '#000' : '#f9f9f9' },
+      ]}
+    >
+      <Text
+        style={[
+          styles.titulo,
+          { color: isDarkMode ? '#fff' : '#000', fontSize: isTablet ? 28 : 24 },
+        ]}
+      >
+        Controle de Uniformes
+      </Text>
+
+      {/* Filtro de categorias */}
+      <View style={styles.filtros}>
+        {['todos', 'camisa', 'capacete', 'bone', 'gandola', 'radio', 'tonfa'].map((tipo) => (
+          <TouchableOpacity
+            key={tipo}
+            onPress={() => setFiltro(tipo)}
+            style={[
+              styles.filtroBtn,
+              {
+                backgroundColor:
+                  filtro === tipo ? '#007AFF' : isDarkMode ? '#333' : '#ddd',
+              },
+            ]}
+          >
+            <Text style={{ color: filtro === tipo ? '#fff' : '#000' }}>
+              {tipo.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {equipamentosFiltrados.length === 0 ? (
+        <Text style={{ textAlign: 'center', color: '#999', marginTop: 30 }}>
+          Nenhum equipamento encontrado.
+        </Text>
       ) : (
         <FlatList
-          data={equipamentos}
+          data={equipamentosFiltrados}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 250 }}
         />
-        
       )}
     </View>
   );
@@ -204,24 +233,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 20,
-    paddingBottom:0,
     paddingHorizontal: 20,
-    backgroundColor: '#f9f9f9',
   },
   titulo: {
-    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
   },
-  vazio: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#999',
-    marginTop: 30,
+  filtros: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  filtroBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    margin: 4,
+    borderRadius: 8,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
@@ -230,14 +261,11 @@ const styles = StyleSheet.create({
   },
   nome: {
     textAlign: 'center',
-    width: Platform.OS === 'ios' ? 100 : 150,
-    backgroundColor: 'white',
-    fontSize: Platform.OS === 'ios' ? 16 : 17,
-    fontWeight:'bold',
+    fontWeight: 'bold',
     marginTop: 8,
     marginBottom: 12,
-    color: '#000',
-    textTransform:'uppercase'
+    textTransform: 'uppercase',
+    maxWidth: 200,
   },
   controles: {
     flexDirection: 'row',
@@ -245,15 +273,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   quantidade: {
-    fontSize: 25,
     fontWeight: 'bold',
-    minWidth: 30,
     textAlign: 'center',
-    marginHorizontal: 15,
+    minWidth: 30,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -263,7 +288,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   editarTexto: {
-    color: '#007AFF',
     marginTop: 8,
     fontWeight: 'bold',
   },

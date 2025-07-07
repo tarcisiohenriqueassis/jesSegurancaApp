@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   botaoFlutuante: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 420 : 690,
+    bottom: Platform.OS === 'ios' ? 420 : 705,
     right: 20,
     width: 60,
     height: 60,

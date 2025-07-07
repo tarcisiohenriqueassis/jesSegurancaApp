@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, Image, Dimensions, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  Dimensions,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,28 +14,39 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const { width } = Dimensions.get('window');
 
 export default function Layout() {
-  const insets = useSafeAreaInsets(); // Captura as margens seguras (safe area)
+  
+
+  const insets = useSafeAreaInsets();
+
+  // Botão customizado sem feedback visual
+  const NoRippleButton = ({ onPress, children, style, ...rest }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={1}
+      style={[{ flex: 1 }, style]}
+      {...rest}
+    >
+      {children}
+    </TouchableOpacity>
+  );
 
   return (
     <Tabs
       screenOptions={{
         tabBarStyle: {
           position: 'absolute',
-          bottom: insets.bottom, // respeita a área segura inferior
+          bottom: 50 - insets.bottom,
           left: 0,
           right: 0,
-          height: Platform.OS === 'ios' ? 60 + insets.bottom : 70 + insets.bottom,
+          height: Platform.OS === 'ios' ? 50 + insets.bottom : 60 + insets.bottom,
           backgroundColor: '#fff',
           borderTopWidth: 0,
-          shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: -3,
-          },
-          shadowOpacity: 0.25,
-          shadowRadius: 3.5,
-          elevation: 5,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 10, // segurança extra para Android
+          shadowColor: 'transparent',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          elevation: 0,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
         },
         tabBarLabelStyle: {
           fontSize: width * 0.024,
@@ -40,8 +58,10 @@ export default function Layout() {
         tabBarLabelPosition: 'below-icon',
         tabBarActiveTintColor: '#fff',
         tabBarInactiveTintColor: '#000',
+        tabBarButton: (props) => <NoRippleButton {...props} />,
       }}
     >
+      {/* Tela Inicial */}
       <Tabs.Screen
         name="index"
         options={{
@@ -49,9 +69,17 @@ export default function Layout() {
           tabBarIcon: ({ color }) => <Ionicons name="home" size={30} color={color} />,
           headerTitleAlign: 'center',
           headerTitle: () => (
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: 35, justifyContent: 'center' }}>
-              <Image source={require("../../assets/imagens/jes.png")} style={{ width: 35, height: 35, resizeMode: "contain" }} />
-              <Text style={{ fontSize: width * 0.050, fontWeight: 'bold' }}>
+            <View style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Image
+                source={require('../../assets/imagens/jes.png')}
+                style={{ width: 35, height: 35, resizeMode: 'contain' }}
+              />
+              <Text style={{ fontSize: width * 0.05, fontWeight: 'bold' }}>
                 JES Segurança LTDA
               </Text>
             </View>
@@ -59,6 +87,7 @@ export default function Layout() {
         }}
       />
 
+      {/* Tela de Vigilantes */}
       <Tabs.Screen
         name="vigilantes"
         options={{
@@ -73,6 +102,7 @@ export default function Layout() {
         }}
       />
 
+      {/* Tela de Cadastro */}
       <Tabs.Screen
         name="cadastrarVigilante"
         options={{
@@ -80,13 +110,14 @@ export default function Layout() {
           tabBarIcon: ({ color }) => <Ionicons name="person-add" size={30} color={color} />,
           headerTitleAlign: 'center',
           headerTitleStyle: {
-            fontSize: width * 0.050,
+            fontSize: width * 0.05,
             fontWeight: 'bold',
             textTransform: 'uppercase',
           },
         }}
       />
 
+      {/* Tela de Equipamentos */}
       <Tabs.Screen
         name="equipamentos"
         options={{
@@ -94,7 +125,7 @@ export default function Layout() {
           tabBarIcon: ({ color }) => <Ionicons name="shirt" size={30} color={color} />,
           headerTitleAlign: 'center',
           headerTitleStyle: {
-            fontSize: width * 0.050,
+            fontSize: width * 0.05,
             fontWeight: 'bold',
             textTransform: 'uppercase',
           },
