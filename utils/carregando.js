@@ -1,24 +1,32 @@
-  
 import React from 'react';
-import { View, Text, ActivityIndicator,StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, useColorScheme } from 'react-native';
 
 export default function Carregando() {
-  // Componente de carregamento para ser usado enquanto os dados estão sendo buscados
-  // Exibe um indicador de carregamento e uma mensagem
+  // Detecta se o tema atual é dark ou claro
+  const isDark = useColorScheme() === 'dark';
+
   return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-        <Text>Carregando ...</Text>
-      </View>
-    );
+    <View style={styles.centered}>
+      {/* Indicador de carregamento animado */}
+      <ActivityIndicator size="large" color={isDark ? '#fff' : '#007AFF'} />
+      
+      {/* Texto informando que está carregando */}
+      <Text style={[styles.texto, { color: isDark ? '#fff' : '#333' }]}>
+        Carregando ...
+      </Text>
+    </View>
+  );
 }
 
-
 const styles = StyleSheet.create({
-
   centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1,               // Ocupa toda a tela
+    justifyContent: 'center', // Centraliza verticalmente
+    alignItems: 'center',     // Centraliza horizontalmente
+  },
+  texto: {
+    marginTop: 10,        // Espaço acima do texto
+    fontSize: 16,         // Tamanho da fonte
+    fontWeight: '500',    // Peso da fonte
   },
 });

@@ -17,117 +17,126 @@ import * as Clipboard from 'expo-clipboard';
 import axios from 'axios';
 import { router } from 'expo-router';
 
-// Importando funções utilitárias
+// Importa funções utilitárias para formatar CPF, nome e componente de carregamento
 import formatarCpf from '../../utils/formataCPF';
 import Carregando from '../../utils/carregando';
 import formatarNome from '../../utils/formataNome';
 
 export default function FuncionariosScreen() {
-
-// Estados para gerenciar os dados dos funcionários, seleção, carregamento e visibilidade do menu
+  // Estado que guarda a lista de funcionários
   const [funcionarios, setFuncionarios] = useState([]);
+  // Estado que guarda os CPFs dos funcionários selecionados na lista
   const [selecionados, setSelecionados] = useState([]);
+  // Estado para controlar a exibição do componente de carregamento
   const [carregando, setCarregando] = useState(true);
+  // Estado para mostrar/ocultar o menu flutuante
   const [menuVisivel, setMenuVisivel] = useState(false);
+  // Estado para armazenar texto digitado na busca
   const [busca, setBusca] = useState('');
+  // Estado para armazenar lista de CPFs duplicados detectados
   const [cpfsDuplicados, setCpfsDuplicados] = useState([]);
+  // Estado para indicar se há erro de CPF duplicado
   const [erroCPF, setErroCPF] = useState(false);
 
-// Função para buscar a lista de funcionários da API
+  // Função que busca os funcionários da API
   const buscarFuncionarios = async () => {
-  // Reseta os estados antes de buscar os dados
+    // Reseta estados antes da nova busca
     setFuncionarios([]);
     setSelecionados([]);
     setCpfsDuplicados([]);
     setErroCPF(false);
 
-  try {
+    try {
+      setCarregando(true); // Exibe o componente de carregamento
+      // Chamada GET para buscar funcionários
+      const response = await axios.get('https://api-jesseguranca.onrender.com/funcionarios');
+      
+      // Ordena os funcionários pelo nome (considerando regras de português)
+      const listaOrdenada = response.data.sort((a, b) =>
+        a.nome.localeCompare(b.nome, 'pt', { sensitivity: 'base' })
+      );
+      setFuncionarios(listaOrdenada);
 
-    setCarregando(true);
-    const response = await axios.get('https://api-jesseguranca.onrender.com/funcionarios');
-   // Ordena a lista de funcionários pelo nome
-    // Usando localeCompare para garantir a ordenação correta em português
-    const listaOrdenada = response.data.sort((a, b) =>
-      a.nome.localeCompare(b.nome, 'pt', { sensitivity: 'base' })
-    );
-    setFuncionarios(listaOrdenada);
+      // Verifica CPFs duplicados na lista retornada
+      const cpfs = listaOrdenada.map(f => f.cpf);
+      // Filtra CPFs que aparecem mais de uma vez
+      const duplicados = cpfs.filter((cpf, index, array) =>
+        array.indexOf(cpf) !== index && array.lastIndexOf(cpf) === index
+      );
 
-    // Verifica CPFs duplicados
-    const cpfs = listaOrdenada.map(f => f.cpf);
-    const duplicados = cpfs.filter((cpf, index, array) => array.indexOf(cpf) !== index && array.lastIndexOf(cpf) === index);
-    if (duplicados.length > 0) {
+      // Caso existam duplicados, atualiza estados e alerta usuário
+      if (duplicados.length > 0) {
+        setErroCPF(true);
+        setCpfsDuplicados(duplicados);
+        Alert.alert('Atenção', 'Há funcionários com CPFs duplicados!');
+        console.log('CPFs duplicados:', duplicados);
+      } else {
+        setErroCPF(false);
+        setCpfsDuplicados([]);
+      }
 
-      setErroCPF(true);
-      setCpfsDuplicados(duplicados);
-      Alert.alert('Atenção', 'Há funcionários com CPFs duplicados!');
-      // Exibe os CPFs duplicados no console
-      console.log('CPFs duplicados:', duplicados);
-    } else {
-      setErroCPF(false);
-      setCpfsDuplicados([]);
+    } catch (_error) {
+      Alert.alert('Erro ao carregar funcionários'); // Erro na requisição
+    } finally {
+      setCarregando(false); // Remove o carregamento
     }
+  };
 
-  } catch (_error) {
-    Alert.alert('Erro ao carregar funcionários');
-  } finally {
-    setCarregando(false);
-  }
-};
-  // Efeito para buscar os funcionários ao montar o componente
+  // useEffect que chama a função de busca na montagem do componente
   useEffect(() => {
     buscarFuncionarios();
   }, []);
 
+  // Alterna a seleção de um funcionário com base no CPF
   const alternarSelecao = (cpf) => {
     setSelecionados((prev) =>
       prev.includes(cpf) ? prev.filter((item) => item !== cpf) : [...prev, cpf]
     );
   };
-  // Função para copiar os funcionários selecionados com CPF formatado
-  // e exibir um alerta de confirmação
+
+  // Copia para a área de transferência os funcionários selecionados, formatando o CPF
   const copiarSelecionados = async () => {
-    // Verifica se há funcionários selecionados
+    // Filtra os funcionários selecionados e formata os dados para copiar
     const dados = funcionarios
       .filter((f) => selecionados.includes(f.cpf))
-      .map((f) => `NOME: ${f.nome}\nCPF: ${formatarCpf(f.cpf)}\n`)
+      .map((f) => `NOME: ${formatarNome(f.nome)}\nCPF: ${formatarCpf(f.cpf)}\n`)
       .join('\n');
 
-    // Verifica se há funcionários selecionados
+    // Caso nenhum funcionário esteja selecionado, alerta e retorna
     if (dados.trim().length === 0) {
       Alert.alert('Nenhum funcionário selecionado.');
       return;
     }
-    // Copia os dados formatados para a área de transferência
+    // Copia os dados para a área de transferência e alerta sucesso
     await Clipboard.setStringAsync(dados);
     Alert.alert('Copiado!', 'Funcionários copiados com CPF formatado.');
-    setMenuVisivel(false);
-  };
-  // Função para selecionar todos os funcionários ou desmarcar todos
-  // Se todos os funcionários já estiverem selecionados, desmarca todos
-  const selecionarTodos = () => {
-    if (selecionados.length === funcionarios.length) {
-      setSelecionados([]);
-    } else {
-      const cpfs = funcionarios.map((f) => f.cpf);
-      setSelecionados(cpfs);
-    }
-    setMenuVisivel(false);
+    setMenuVisivel(false); // Fecha o menu flutuante
   };
 
-  // Filtra os funcionários com base na busca por nome ou CPF
-  // A busca é feita ignorando maiúsculas e minúsculas
-  // e verificando se o nome contém a string de busca ou se o CPF é igual
+  // Seleciona todos os funcionários, ou desmarca todos se já estiverem selecionados
+  const selecionarTodos = () => {
+    if (selecionados.length === funcionarios.length) {
+      setSelecionados([]); // Desmarca todos
+    } else {
+      const cpfs = funcionarios.map((f) => f.cpf);
+      setSelecionados(cpfs); // Seleciona todos
+    }
+    setMenuVisivel(false); // Fecha o menu flutuante
+  };
+
+  // Filtra funcionários conforme texto digitado na busca, por nome ou CPF
   const funcionariosFiltrados = funcionarios.filter((f) =>
     f.nome.toLowerCase().includes(busca.toLowerCase()) || f.cpf.includes(busca)
   );
-  // Se estiver carregando, exibe o componente de carregamento
-  // Caso contrário, renderiza a lista de funcionários
+
+  // Enquanto carregando, mostra o componente de loading
   if (carregando) {
     return <Carregando />;
   }
 
   return (
     <View style={{ width: '100%', height: '100%' }}>
+      {/* Cabeçalho com título e campo de busca */}
       <View style={styles.header}>
         <Text style={styles.titulo}>Lista de Funcionários</Text>
         <TextInput
@@ -139,21 +148,26 @@ export default function FuncionariosScreen() {
         />
       </View>
 
+      {/* Lista de funcionários filtrados */}
       <FlatList
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
         data={funcionariosFiltrados}
         keyExtractor={(item) => item.cpf.toString()}
+        refreshing={carregando}
+        onRefresh={buscarFuncionarios}
         renderItem={({ item }) => {
+          // Verifica se o funcionário está selecionado
           const selecionado = selecionados.includes(item.cpf);
 
           return (
             <Pressable
-            onPress={() => alternarSelecao(item.cpf)}
-            style={[
-            styles.card,
-            cpfsDuplicados.includes(item.cpf) && styles.cardErro // adiciona borda vermelha se duplicado
-            ]}
+              onPress={() => alternarSelecao(item.cpf)}
+              style={[
+                styles.card,
+                cpfsDuplicados.includes(item.cpf) && styles.cardErro,
+              ]}
             >
+              {/* Checkbox personalizado */}
               <View
                 style={[
                   styles.checkbox,
@@ -167,14 +181,16 @@ export default function FuncionariosScreen() {
                 )}
               </View>
 
+              {/* Informações do funcionário */}
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 16 }}>
                   Nome: {formatarNome(item.nome)}
                 </Text>
                 <Text style={{ fontSize: 14, color: '#666' }}>Cpf: {item.cpf}</Text>
 
+                {/* Botões de ação: editar e excluir */}
                 <View style={{ flexDirection: 'row', marginTop: 8, gap: 12 }}>
-                  {/* Editar */}
+                  {/* Botão editar */}
                   <TouchableOpacity
                     onPress={() =>
                       router.push({
@@ -188,38 +204,38 @@ export default function FuncionariosScreen() {
                     <Text style={{ marginLeft: 3, fontSize: 15 }}>Editar</Text>
                   </TouchableOpacity>
 
-                  {/* Excluir */}
-                <TouchableOpacity
-                onPress={() => {
-                  Alert.alert(
-                    'Confirmar Exclusão',
-                    `Deseja excluir o funcionário "${item.nome}"?`,
-                    [
-                      { text: 'Cancelar', style: 'cancel' },
-                      {
-                        text: 'Excluir',
-                        style: 'destructive',
-                        onPress: async () => {
-                          try {
-                            await axios.delete(`https://api-jesseguranca.onrender.com/funcionarios/${item.id}`);
-                            Alert.alert('Sucesso', 'Funcionário excluído com sucesso!');
-                            buscarFuncionarios(); // Atualiza a lista
-                          } catch (error) {
-                            console.error('Erro ao excluir:', error);
-                            Alert.alert('Erro', 'Não foi possível excluir o funcionário.');
-                          }
-                        },
-                      },
-                    ]
-                  );
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}
-              >
-                <Ionicons name="trash" size={20} color="red" />
-                <Text style={{ marginLeft: 3, fontSize: 15, color: 'red' }}>Excluir</Text>
-              </TouchableOpacity>
-
-
+                  {/* Botão excluir */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      Alert.alert(
+                        'Confirmar Exclusão',
+                        `Deseja excluir o funcionário "${item.nome}"?`,
+                        [
+                          { text: 'Cancelar', style: 'cancel' },
+                          {
+                            text: 'Excluir',
+                            style: 'destructive',
+                            onPress: async () => {
+                              try {
+                                await axios.delete(
+                                  `https://api-jesseguranca.onrender.com/funcionarios/${item.id}`
+                                );
+                                Alert.alert('Sucesso', 'Funcionário excluído com sucesso!');
+                                buscarFuncionarios(); // Atualiza a lista após exclusão
+                              } catch (error) {
+                                console.error('Erro ao excluir:', error);
+                                Alert.alert('Erro', 'Não foi possível excluir o funcionário.');
+                              }
+                            },
+                          },
+                        ]
+                      );
+                    }}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}
+                  >
+                    <Ionicons name="trash" size={20} color="red" />
+                    <Text style={{ marginLeft: 3, fontSize: 15, color: 'red' }}>Excluir</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </Pressable>
@@ -227,6 +243,7 @@ export default function FuncionariosScreen() {
         }}
       />
 
+      {/* Botão flutuante que abre o menu de opções */}
       <TouchableOpacity
         style={styles.botaoFlutuante}
         onPress={() => setMenuVisivel(!menuVisivel)}
@@ -240,6 +257,7 @@ export default function FuncionariosScreen() {
         </Text>
       </TouchableOpacity>
 
+      {/* Menu flutuante com opções */}
       <Modal
         transparent={true}
         visible={menuVisivel}
@@ -251,13 +269,16 @@ export default function FuncionariosScreen() {
           activeOpacity={1}
         >
           <View style={styles.menuFlutuante}>
+            {/* Botão para selecionar ou limpar seleção de todos */}
             <Button
               title={selecionados.length === funcionarios.length ? 'Limpar Seleção' : 'Selecionar Todos'}
               onPress={selecionarTodos}
             />
             <View style={{ height: 12 }} />
+            {/* Botão para copiar funcionários selecionados */}
             <Button title="Copiar selecionados" onPress={copiarSelecionados} />
             <View style={{ height: 12 }} />
+            {/* Botão para atualizar a lista */}
             <Button
               title="Atualizar lista"
               onPress={() => {
@@ -272,6 +293,7 @@ export default function FuncionariosScreen() {
   );
 }
 
+// Estilos usados na tela
 const styles = StyleSheet.create({
   header: {
     paddingTop: 20,
@@ -344,7 +366,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   cardErro: {
-  borderColor: 'red',
-  backgroundColor: '#ffe6e6',
-},
+    borderColor: 'red',
+    backgroundColor: '#ffe6e6',
+  },
 });

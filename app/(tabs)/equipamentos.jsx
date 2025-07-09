@@ -1,3 +1,4 @@
+// Importação de pacotes e componentes do React Native
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -18,48 +19,58 @@ import {
 } from '@expo/vector-icons';
 import axios from 'axios';
 
-export default function EquipamentosScreen() {
-  const [equipamentos, setEquipamentos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editandoId, setEditandoId] = useState(null);
-  const [quantidadesTemp, setQuantidadesTemp] = useState({});
-  const [filtro, setFiltro] = useState('todos');
 
-  const theme = useColorScheme(); // dark | light
+export default function EquipamentosScreen() {
+
+  // Estados principais
+  const [equipamentos, setEquipamentos] = useState([]); // Lista de equipamentos
+  const [loading, setLoading] = useState(true); // Controle de carregamento
+  const [editandoId, setEditandoId] = useState(null); // ID do item sendo editado
+  const [quantidadesTemp, setQuantidadesTemp] = useState({}); // Quantidades temporárias para edição
+  const [filtro, setFiltro] = useState('todos'); // Filtro ativo
+
+  // Detecção de tema e dimensões de tela
+  const theme = useColorScheme();
   const isDarkMode = theme === 'dark';
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
+  // URL da API
   const API_URL = 'https://api-jesseguranca.onrender.com/equipamentos';
 
-  const carregarEquipamentos = async () => {
+  // Função que busca os equipamentos da API
+  const carregarEquipamentos = async (mostrarLoading = true) => {
+    if (mostrarLoading) setLoading(true);
     try {
       const response = await axios.get(API_URL);
       setEquipamentos(response.data);
     } catch (error) {
       console.error('Erro ao buscar equipamentos:', error);
     } finally {
-      setLoading(false);
+      if (mostrarLoading) setLoading(false);
     }
   };
 
+  // Salva nova quantidade no banco via API
   const salvarQuantidade = async (id) => {
     try {
       const novaQtd = parseInt(quantidadesTemp[id], 10);
       if (!isNaN(novaQtd)) {
         await axios.put(`${API_URL}/${id}`, { quantidade: novaQtd });
         setEditandoId(null);
-        carregarEquipamentos();
+        carregarEquipamentos(false); // Atualiza lista após salvar
       }
     } catch (error) {
       console.error('Erro ao salvar quantidade:', error);
     }
   };
 
+  // Carrega os dados ao abrir o componente
   useEffect(() => {
-    carregarEquipamentos();
+    carregarEquipamentos(true);
   }, []);
 
+  // Associa cada nome de equipamento a um ícone
   const getIcon = (nome) => {
     const key = (nome || '')
       .trim()
@@ -91,11 +102,13 @@ export default function EquipamentosScreen() {
     }
   };
 
+  // Aplica o filtro selecionado
   const equipamentosFiltrados =
     filtro === 'todos'
       ? equipamentos
       : equipamentos.filter((e) => e.nome.toLowerCase().includes(filtro));
 
+  // Renderiza cada item da lista
   const renderItem = ({ item }) => {
     const icon = getIcon(item.nome);
     const IconComponent = icon.lib;
@@ -108,14 +121,18 @@ export default function EquipamentosScreen() {
           { backgroundColor: isDarkMode ? '#1c1c1e' : '#fff' },
         ]}
       >
+        {/* Ícone do equipamento */}
         <IconComponent name={icon.name} size={30} color={isDarkMode ? '#fff' : '#444'} />
+
+        {/* Nome do equipamento */}
         <Text style={[styles.nome, { color: isDarkMode ? '#fff' : '#000', fontSize: isTablet ? 20 : 17 }]}>
           {item.nome}
         </Text>
 
+        {/* Se estiver em modo de edição, mostra o input */}
         <View style={styles.controles}>
           {estaEditando ? (
-            <>
+            <View>
               <TextInput
                 style={[
                   styles.input,
@@ -136,8 +153,9 @@ export default function EquipamentosScreen() {
               <TouchableOpacity onPress={() => salvarQuantidade(item.id)}>
                 <Ionicons name="checkmark-circle" size={30} color="#2ecc71" />
               </TouchableOpacity>
-            </>
+            </View>
           ) : (
+            // Caso contrário, exibe a quantidade atual
             <Text
               style={[
                 styles.quantidade,
@@ -149,6 +167,7 @@ export default function EquipamentosScreen() {
           )}
         </View>
 
+        {/* Botão de editar/cancelar */}
         <TouchableOpacity
           onPress={() => {
             if (estaEditando) {
@@ -170,12 +189,14 @@ export default function EquipamentosScreen() {
     );
   };
 
-  if (loading) {
+  // Tela de loading enquanto carrega
+  if (loading && equipamentos.length === 0) {
     return (
       <ActivityIndicator size="large" color="#000" style={{ marginTop: 60 }} />
     );
   }
 
+  // Renderiza a tela principal
   return (
     <View
       style={[
@@ -183,6 +204,7 @@ export default function EquipamentosScreen() {
         { backgroundColor: isDarkMode ? '#000' : '#f9f9f9' },
       ]}
     >
+      {/* Título */}
       <Text
         style={[
           styles.titulo,
@@ -192,7 +214,7 @@ export default function EquipamentosScreen() {
         Controle de Uniformes
       </Text>
 
-      {/* Filtro de categorias */}
+      {/* Botões de filtro */}
       <View style={styles.filtros}>
         {['todos', 'camisa', 'capacete', 'bone', 'gandola', 'radio', 'tonfa'].map((tipo) => (
           <TouchableOpacity
@@ -213,6 +235,7 @@ export default function EquipamentosScreen() {
         ))}
       </View>
 
+      {/* Lista de equipamentos */}
       {equipamentosFiltrados.length === 0 ? (
         <Text style={{ textAlign: 'center', color: '#999', marginTop: 30 }}>
           Nenhum equipamento encontrado.
@@ -223,12 +246,15 @@ export default function EquipamentosScreen() {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 250 }}
+          refreshing={loading}
+          onRefresh={() => carregarEquipamentos(false)}
         />
       )}
     </View>
   );
 }
 
+// Estilos da tela
 const styles = StyleSheet.create({
   container: {
     flex: 1,

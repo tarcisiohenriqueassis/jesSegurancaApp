@@ -1,18 +1,17 @@
+// Função para formatar o nome com a primeira letra de cada palavra em maiúscula
 const formatarNome = (nome) =>
-    // Função para formatar o nome
-    // Recebe uma string 'nome' e retorna a mesma string com a primeira letra de cada palavra em maiúscula
-    // Exemplo: 'joão da silva' -> 'João Da Silva'
-    // Formata o nome para ter a primeira letra de cada palavra em maiúscula
-    // Converte o nome para minúsculas, divide em palavras, capitaliza a primeira letra de cada palavra     
-    // e junta as palavras de volta em uma string
-    nome
+  // Converte toda a string para minúsculas
+  // Divide a string em um array de palavras usando espaço como separador
+  // Para cada palavra, transforma a primeira letra em maiúscula e junta com o restante da palavra
+  // Junta as palavras de volta em uma única string separadas por espaço
+  nome
     .toLowerCase()
     .split(' ')
     .map(p => p.charAt(0).toUpperCase() + p.slice(1))
     .join(' ');
 
- export default formatarNome;
+export default formatarNome;
 
 // Exemplo de uso:
 // const nomeFormatado = formatarNome('joão da silva');
-// console.log(nomeFormatado); // "João Da Silva"
+// console.log(nomeFormatado); // Saída: "João Da Silva"
